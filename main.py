@@ -57,15 +57,11 @@ class HiddenNeuron:
 
     def calc_backward(self, output_layer, weights):
 
-        # sigma(weights + output_error_terms)
         sigma = 0
         for output_neuron, weight in zip(output_layer, weights):
             sigma += output_neuron.error_term * weight.val
-            # print("output_neuron error term: {}, weight: {}".format(output_neuron.error_term, weight.val))    
-        # print("sigma: {}".format(sigma))
+
         self.error_term = sigma * (self.val * (1 - self.val))
-        # print("E: {}, 1-E: {}".format(self.val, 1 - self.val))
-        # print("H: {}".format(self.error_term))
 
 class OutputNeuron:
     def __init__(self):
@@ -151,23 +147,18 @@ class ANN:
 class TestSet:
     def __init__(self):
         # inputs
-        # self.input_layer = [InputNeuron(0), InputNeuron(1), InputNeuron(1), InputNeuron(0)]
-        self.input_layer = [InputNeuron(10), InputNeuron(30), InputNeuron(20)]
+        self.input_layer = [InputNeuron(0), InputNeuron(1), InputNeuron(1), InputNeuron(0)]
         
         # inputs -> hidden weights
-        # self.i_h_weights1 = [Weight(0.2), Weight(0.3), Weight(0.5), Weight(0.1)]
-        # self.i_h_weights2 = [Weight(1.1), Weight(0.4), Weight(0.1), Weight(0.6)]
-        self.i_h_weights1 = [Weight(0.2), Weight(-0.1), Weight(0.4)]
-        self.i_h_weights2 = [Weight(0.7), Weight(-1.2), Weight(1.2)]
+        self.i_h_weights1 = [Weight(0.2), Weight(0.3), Weight(0.5), Weight(0.1)]
+        self.i_h_weights2 = [Weight(1.1), Weight(0.4), Weight(0.1), Weight(0.6)]
 
         # hidden layer
         self.hidden_layer = [HiddenNeuron(), HiddenNeuron()]
 
         # hidden -> output weights
-        # self.h_o_weights1 = [Weight(0.3), Weight(0.4)]
-        # self.h_o_weights2 = [Weight(0.1), Weight(0.7)]
-        self.h_o_weights1 = [Weight(1.1), Weight(0.1)]
-        self.h_o_weights2 = [Weight(3.1), Weight(1.17)]
+        self.h_o_weights1 = [Weight(0.3), Weight(0.4)]
+        self.h_o_weights2 = [Weight(0.1), Weight(0.7)]
 
         # output layer
         self.output_layer = [OutputNeuron(), OutputNeuron()]
@@ -182,6 +173,10 @@ class TestSet:
 
 if __name__ == "__main__":
     ann = ANN(TestSet())
-    for x in range(0, 1):
+    i = 0
+    for x in range(0, 10):
+        print("iteration: {}".format(i))
         ann.forward_propagation()
         ann.backward_propagation()
+        i+=1
+        print()
