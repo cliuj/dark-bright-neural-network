@@ -77,10 +77,12 @@ class OutputNeuron:
 class ANN:
     def __init__(self, test_set):
         self.test_set = test_set
-        self.input_layer = test_set.input_layer
+        self.input_layer = test_set.input_layers[0]
         self.hidden_layer = test_set.hidden_layer
         self.output_layer = test_set.output_layer
     
+    def change_input_layer(self, input_index):
+        self.input_layer = self.test_set.input_layers[input_index]
 
     def forward_propagation(self):
 
@@ -144,39 +146,113 @@ class ANN:
             print_weights(self.test_set.i_h_weights1)
             print_weights(self.test_set.i_h_weights2)
 
+    def manage_target(self):
+        sum = 0;
+        for _input in self.input_layer:
+            sum += _input.val 
+        if sum > 1:
+            self.test_set.target1 = 1
+            self.test_set.target2 = 0
+        else:
+            self.test_set.target1 = 0
+            self.test_set.target2 = 1
+
+    def get_prediction(self):
+        if self.output_layer[0].val > self.output_layer[1].val:
+            return "bright"
+        else:
+            return "dark"
+
 class TestSet:
     def __init__(self):
         # inputs
-        self.input_layer = [InputNeuron(0), InputNeuron(1), InputNeuron(1), InputNeuron(0)]
+        # self.input_layer = [InputNeuron(0), InputNeuron(1), InputNeuron(1), InputNeuron(0)]
+        self.input_data = self.parse_file("input_data.txt")
+        self.input_layers = self.generate_input_layers(self.input_data)
+        
+        
+        #for input_layer in self.input_layers:
+        #    print_val(input_layer)
+        
+        
+        
+        self.weights = self.parse_file("initial_weights.txt")
+        self.generate_weights(self.weights)
+        
+        if debug:
+            print_weights(self.i_h_weights1)
+            print_weights(self.i_h_weights2)
+            print_weights(self.h_o_weights1)
+        
+        
         
         # inputs -> hidden weights
-        self.i_h_weights1 = [Weight(0.2), Weight(0.3), Weight(0.5), Weight(0.1)]
-        self.i_h_weights2 = [Weight(1.1), Weight(0.4), Weight(0.1), Weight(0.6)]
-
         # hidden layer
         self.hidden_layer = [HiddenNeuron(), HiddenNeuron()]
 
         # hidden -> output weights
-        self.h_o_weights1 = [Weight(0.3), Weight(0.4)]
-        self.h_o_weights2 = [Weight(0.1), Weight(0.7)]
 
         # output layer
         self.output_layer = [OutputNeuron(), OutputNeuron()]
-
+        
         # output targets
-        self.target1 = 1
-        self.target2 = 0
+        self.target1 = 0 
+        self.target2 = 1
 
         # learning rate
-        self.learning_rate = 1.2
+        self.learning_rate = 3.28
+
+    def parse_file(self, file):
+        input_data = [line.rstrip('\n') for line in open(file)]
+
+        #print(input_data)
+        #print((input_data[0])[0])
+
+        return input_data
+
+    def generate_input_layers(self, input_data):
+        input_layers = []
+        for data in input_data:
+            input_layer = []
+            for bit in list(data):
+                input_layer.append(InputNeuron(int(bit)))
+            input_layers.append(input_layer)
+
+        return input_layers
+    
+    def generate_weights(self, weights):
+        weight_layers = []
+        self.i_h_weights1 = []
+        self.i_h_weights2 = []
+        self.h_o_weights1 = []
+        self.h_o_weights2 = []
+
+        for weight_section in weights:
+            # split the floats
+            weight_layers.append(weight_section.split())
+        
+        
+        # add input to hidden layer weights
+        for i in range(0,4):
+            self.i_h_weights1.append(Weight(float((weight_layers[0])[i])))
+            self.i_h_weights2.append(Weight(float((weight_layers[1])[i])))
+        
+        # add hidden to output layer weights
+        for i in range(0,2):
+            self.h_o_weights1.append(Weight(float((weight_layers[2])[i])))
+            self.h_o_weights2.append(Weight(float((weight_layers[3])[i])))
 
 
 if __name__ == "__main__":
     ann = ANN(TestSet())
     i = 0
-    for x in range(0, 10):
-        print("iteration: {}".format(i))
-        ann.forward_propagation()
-        ann.backward_propagation()
-        i+=1
+    for x in range(0, 100):
+        for layer in range(0, 16):
+            print("iteration: {}".format(i))
+            ann.change_input_layer(layer)
+            ann.manage_target()
+            ann.forward_propagation()
+            ann.backward_propagation()
+            print(ann.get_prediction());
+            i+=1
         print()
