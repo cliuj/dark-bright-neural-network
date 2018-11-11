@@ -89,6 +89,7 @@ class ANN:
         # input -> hidden layer output:
         self.hidden_layer[0].calc_forward(self.input_layer, self.test_set.i_h_weights1)
         self.hidden_layer[1].calc_forward(self.input_layer, self.test_set.i_h_weights2)
+        self.hidden_layer[2].calc_forward(self.input_layer, self.test_set.i_h_weights3)
 
 
         if debug:
@@ -114,9 +115,11 @@ class ANN:
         # calculate the error terms for the hidden layer
         backward_o_h_weights1 = [self.test_set.h_o_weights1[0], self.test_set.h_o_weights2[0]]
         backward_o_h_weights2 = [self.test_set.h_o_weights1[1], self.test_set.h_o_weights2[1]]
+        backward_o_h_weights3 = [self.test_set.h_o_weights1[0], self.test_set.h_o_weights2[1]]
 
         self.hidden_layer[0].calc_backward(self.output_layer, backward_o_h_weights1)
         self.hidden_layer[1].calc_backward(self.output_layer, backward_o_h_weights2)
+        self.hidden_layer[2].calc_backward(self.output_layer, backward_o_h_weights3)
 
         if debug:
             print_error_terms(self.hidden_layer)
@@ -129,6 +132,9 @@ class ANN:
         for weight in self.test_set.h_o_weights2:
             weight.change_weight(self.test_set.learning_rate, self.output_layer[1].error_term, self.output_layer[1].val)
 
+        for weight in self.test_set.h_o_weights3:
+            weight.change_weight(self.test_set.learning_rate, self.output_layer[1].error_term, self.output_layer[0].val)
+
         # printout the new hidden -> output weight values
         if debug:
             print_weights(self.test_set.h_o_weights1)
@@ -140,6 +146,9 @@ class ANN:
         
         for weight in self.test_set.i_h_weights2:
             weight.change_weight(self.test_set.learning_rate, self.hidden_layer[1].error_term, self.hidden_layer[1].val)
+
+        for weight in self.test_set.i_h_weights3:
+            weight.change_weight(self.test_set.learning_rate, self.hidden_layer[2].error_term, self.hidden_layer[2].val)
 
         # printout the new input -> hidden weight values
         if debug:
@@ -163,6 +172,34 @@ class ANN:
         else:
             return "dark"
 
+    def save_weights(self):
+        f = open("output_weights.txt", 'w')
+        for i in range(0, 4):
+            f.write("{} ".format(self.test_set.i_h_weights1[i].val))
+        f.write("\n")
+        
+        for i in range(0, 4):
+            f.write("{} ".format(self.test_set.i_h_weights2[i].val))
+        f.write("\n")
+
+        for i in range(0, 4):
+            f.write("{} ".format(self.test_set.i_h_weights3[i].val))
+        f.write("\n")
+        
+        for i in range(0, 2):
+            
+            f.write("{} ".format(self.test_set.h_o_weights1[i].val))
+        f.write("\n")
+        
+        for i in range(0, 2):
+            f.write("{} ".format(self.test_set.h_o_weights2[i].val))
+        f.write("\n")
+        
+        for i in range(0, 2):
+            f.write("{} ".format(self.test_set.h_o_weights3[i].val))
+        f.write("\n")
+
+
 class TestSet:
     def __init__(self):
         # inputs
@@ -176,7 +213,8 @@ class TestSet:
         
         
         
-        self.weights = self.parse_file("initial_weights.txt")
+        #self.weights = self.parse_file("initial_weights.txt")
+        self.weights = self.parse_file("output_weights.txt")
         self.generate_weights(self.weights)
         
         if debug:
@@ -188,7 +226,7 @@ class TestSet:
         
         # inputs -> hidden weights
         # hidden layer
-        self.hidden_layer = [HiddenNeuron(), HiddenNeuron()]
+        self.hidden_layer = [HiddenNeuron(), HiddenNeuron(), HiddenNeuron()]
 
         # hidden -> output weights
 
@@ -200,7 +238,7 @@ class TestSet:
         self.target2 = 1
 
         # learning rate
-        self.learning_rate = 3.28
+        self.learning_rate = 0.1554
 
     def parse_file(self, file):
         input_data = [line.rstrip('\n') for line in open(file)]
@@ -224,8 +262,10 @@ class TestSet:
         weight_layers = []
         self.i_h_weights1 = []
         self.i_h_weights2 = []
+        self.i_h_weights3 = []
         self.h_o_weights1 = []
         self.h_o_weights2 = []
+        self.h_o_weights3 = []
 
         for weight_section in weights:
             # split the floats
@@ -236,19 +276,20 @@ class TestSet:
         for i in range(0,4):
             self.i_h_weights1.append(Weight(float((weight_layers[0])[i])))
             self.i_h_weights2.append(Weight(float((weight_layers[1])[i])))
+            self.i_h_weights3.append(Weight(float((weight_layers[2])[i])))
         
         # add hidden to output layer weights
         for i in range(0,2):
             self.h_o_weights1.append(Weight(float((weight_layers[2])[i])))
             self.h_o_weights2.append(Weight(float((weight_layers[3])[i])))
-
+            self.h_o_weights3.append(Weight(float((weight_layers[4])[i])))
 
 if __name__ == "__main__":
     ann = ANN(TestSet())
     i = 0
-    for x in range(0, 100):
-        for layer in range(0, 16):
-            print("iteration: {}".format(i))
+    for x in range(0, 1000):
+        for layer in range(0, 10):
+            #print("iteration: {}".format(i))
             ann.change_input_layer(layer)
             ann.manage_target()
             ann.forward_propagation()
@@ -256,3 +297,5 @@ if __name__ == "__main__":
             print(ann.get_prediction());
             i+=1
         print()
+
+    ann.save_weights()
