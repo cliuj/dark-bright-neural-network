@@ -1,39 +1,20 @@
 import math
 
-debug = False
+debug = True
 
-
-
-def sigmoid_squash(s):
-    sigmoid = 1.0 / (1.0 + math.exp(-s))
+# performs sigmoid operation with s as its exponent
+def sigmoid(s):
+    sigmod = 1.0/(1.0 + math.exp(-s))
     return sigmoid
 
 
-def sigma(inputs, weights):
-    sigma = 0
-    for _input, weight in zip(inputs, weights):
-        sigma += _input.val * weight.val
-
-    return sigma
+# returns an array of every line in the file
+def parse_file(to_parse_file):
+    return [line.rstrip('\n') for line in open(to_parse_file)]
 
 
-def print_val(layer):
-    i = 0
-    for neuron in layer:
-        print("neuron {} val: {}".format(i, neuron.val))
-        i+=1
 
-def print_weights(weights):
-    i = 0
-    for weight in weights:
-        print("weight {}: {}".format(i, weight.val))
-        i+=1
 
-def print_error_terms(layer):
-    i = 0
-    for neuron in layer:
-        print("neuron {} error_term: {}".format(i, neuron.error_term))
-        i+=1
 
 
 class InputNeuron:
@@ -44,258 +25,87 @@ class Weight:
     def __init__(self, val):
         self.val = val
 
-    def change_weight(self, learning_rate, error_term, val):
-        weight_change = self.val + (learning_rate * error_term * val)
-        self.val = weight_change
-
 class HiddenNeuron:
     def __init__(self):
-        self.val = 0;
-
-    def calc_forward(self, inputs, weights):
-        self.val = sigmoid_squash(sigma(inputs, weights))
-
-    def calc_backward(self, output_layer, weights):
-
-        sigma = 0
-        for output_neuron, weight in zip(output_layer, weights):
-            sigma += output_neuron.error_term * weight.val
-
-        self.error_term = sigma * (self.val * (1 - self.val))
+        self.val = 0
 
 class OutputNeuron:
     def __init__(self):
         self.val = 0
 
-    def calc_forward(self, inputs, weights):
-        self.val = sigmoid_squash(sigma(inputs, weights))
 
-    def calc_error_term(self, target):
-        self.error_term = self.val * (1 - self.val) * (target - self.val)
 
 
 class ANN:
-    def __init__(self, test_set):
-        self.test_set = test_set
-        self.input_layer = test_set.input_layers[0]
-        self.hidden_layer = test_set.hidden_layer
-        self.output_layer = test_set.output_layer
-    
-    def change_input_layer(self, input_index):
-        self.input_layer = self.test_set.input_layers[input_index]
-
-    def forward_propagation(self):
-
-        # input -> hidden layer output:
-        self.hidden_layer[0].calc_forward(self.input_layer, self.test_set.i_h_weights1)
-        self.hidden_layer[1].calc_forward(self.input_layer, self.test_set.i_h_weights2)
-        self.hidden_layer[2].calc_forward(self.input_layer, self.test_set.i_h_weights3)
-
-
-        if debug:
-            print("forward propagation hidden layer:")
-            print_val(self.hidden_layer)
-
-        # hidden -> output layer output:
-        self.test_set.output_layer[0].calc_forward(self.hidden_layer, self.test_set.h_o_weights1)
-        self.test_set.output_layer[1].calc_forward(self.hidden_layer, self.test_set.h_o_weights2)
-
-        print("forward propagation output layer:")
-        print_val(self.output_layer)
-
-    def backward_propagation(self):
-
-        # output -> hidden layer:
-        self.output_layer[0].calc_error_term(self.test_set.target1)
-        self.output_layer[1].calc_error_term(self.test_set.target2)
-
-        if debug:
-            print_error_terms(self.output_layer)
-
-        # calculate the error terms for the hidden layer
-        backward_o_h_weights1 = [self.test_set.h_o_weights1[0], self.test_set.h_o_weights2[0]]
-        backward_o_h_weights2 = [self.test_set.h_o_weights1[1], self.test_set.h_o_weights2[1]]
-        backward_o_h_weights3 = [self.test_set.h_o_weights1[0], self.test_set.h_o_weights2[1]]
-
-        self.hidden_layer[0].calc_backward(self.output_layer, backward_o_h_weights1)
-        self.hidden_layer[1].calc_backward(self.output_layer, backward_o_h_weights2)
-        self.hidden_layer[2].calc_backward(self.output_layer, backward_o_h_weights3)
-
-        if debug:
-            print_error_terms(self.hidden_layer)
-
-
-        # calculate the hidden -> output weight changes
-        for weight in self.test_set.h_o_weights1:
-            weight.change_weight(self.test_set.learning_rate, self.output_layer[0].error_term, self.output_layer[0].val)
-
-        for weight in self.test_set.h_o_weights2:
-            weight.change_weight(self.test_set.learning_rate, self.output_layer[1].error_term, self.output_layer[1].val)
-
-        for weight in self.test_set.h_o_weights3:
-            weight.change_weight(self.test_set.learning_rate, self.output_layer[1].error_term, self.output_layer[0].val)
-
-        # printout the new hidden -> output weight values
-        if debug:
-            print_weights(self.test_set.h_o_weights1)
-            print_weights(self.test_set.h_o_weights2)
-
-        # calculate the input -> hidden weight changes
-        for weight in self.test_set.i_h_weights1:
-            weight.change_weight(self.test_set.learning_rate, self.hidden_layer[0].error_term, self.hidden_layer[0].val)
-        
-        for weight in self.test_set.i_h_weights2:
-            weight.change_weight(self.test_set.learning_rate, self.hidden_layer[1].error_term, self.hidden_layer[1].val)
-
-        for weight in self.test_set.i_h_weights3:
-            weight.change_weight(self.test_set.learning_rate, self.hidden_layer[2].error_term, self.hidden_layer[2].val)
-
-        # printout the new input -> hidden weight values
-        if debug:
-            print_weights(self.test_set.i_h_weights1)
-            print_weights(self.test_set.i_h_weights2)
-
-    def manage_target(self):
-        sum = 0;
-        for _input in self.input_layer:
-            sum += _input.val 
-        if sum > 1:
-            self.test_set.target1 = 1
-            self.test_set.target2 = 0
-        else:
-            self.test_set.target1 = 0
-            self.test_set.target2 = 1
-
-    def get_prediction(self):
-        if self.output_layer[0].val > self.output_layer[1].val:
-            return "bright"
-        else:
-            return "dark"
-
-    def save_weights(self):
-        f = open("output_weights.txt", 'w')
-        for i in range(0, 4):
-            f.write("{} ".format(self.test_set.i_h_weights1[i].val))
-        f.write("\n")
-        
-        for i in range(0, 4):
-            f.write("{} ".format(self.test_set.i_h_weights2[i].val))
-        f.write("\n")
-
-        for i in range(0, 4):
-            f.write("{} ".format(self.test_set.i_h_weights3[i].val))
-        f.write("\n")
-        
-        for i in range(0, 2):
-            
-            f.write("{} ".format(self.test_set.h_o_weights1[i].val))
-        f.write("\n")
-        
-        for i in range(0, 2):
-            f.write("{} ".format(self.test_set.h_o_weights2[i].val))
-        f.write("\n")
-        
-        for i in range(0, 2):
-            f.write("{} ".format(self.test_set.h_o_weights3[i].val))
-        f.write("\n")
-
-
-class TestSet:
     def __init__(self):
-        # inputs
-        # self.input_layer = [InputNeuron(0), InputNeuron(1), InputNeuron(1), InputNeuron(0)]
-        self.input_data = self.parse_file("input_data.txt")
-        self.input_layers = self.generate_input_layers(self.input_data)
-        
-        
-        #for input_layer in self.input_layers:
-        #    print_val(input_layer)
-        
-        
-        
-        #self.weights = self.parse_file("initial_weights.txt")
-        self.weights = self.parse_file("output_weights.txt")
-        self.generate_weights(self.weights)
+        pass
+
+    def generate_test_set(self):
+        self.input_layers = self.__retrieve_inputs("inputs_data.txt")
+        self.input_to_hidden_weights_1 = self.__retrieve_initial_weights("initial_weights.txt")
+
+
+
+    # stores the inputs from "initial_weights.txt" into input_layers[]
+    # on private because this function should not be called after the
+    # first call
+    def __retrieve_inputs(self, inputs_file):
+        self.input_data = parse_file(inputs_file)
         
         if debug:
-            print_weights(self.i_h_weights1)
-            print_weights(self.i_h_weights2)
-            print_weights(self.h_o_weights1)
-        
-        
-        
-        # inputs -> hidden weights
-        # hidden layer
-        self.hidden_layer = [HiddenNeuron(), HiddenNeuron(), HiddenNeuron()]
+            print("input_data: ", self.input_data)
 
-        # hidden -> output weights
-
-        # output layer
-        self.output_layer = [OutputNeuron(), OutputNeuron()]
-        
-        # output targets
-        self.target1 = 0 
-        self.target2 = 1
-
-        # learning rate
-        self.learning_rate = 0.1554
-
-    def parse_file(self, file):
-        input_data = [line.rstrip('\n') for line in open(file)]
-
-        #print(input_data)
-        #print((input_data[0])[0])
-
-        return input_data
-
-    def generate_input_layers(self, input_data):
         input_layers = []
-        for data in input_data:
+        for inputs in self.input_data:
             input_layer = []
-            for bit in list(data):
+            for bit in list(inputs):
                 input_layer.append(InputNeuron(int(bit)))
             input_layers.append(input_layer)
 
         return input_layers
-    
-    def generate_weights(self, weights):
-        weight_layers = []
-        self.i_h_weights1 = []
-        self.i_h_weights2 = []
-        self.i_h_weights3 = []
-        self.h_o_weights1 = []
-        self.h_o_weights2 = []
-        self.h_o_weights3 = []
 
-        for weight_section in weights:
-            # split the floats
-            weight_layers.append(weight_section.split())
-        
-        
-        # add input to hidden layer weights
-        for i in range(0,4):
-            self.i_h_weights1.append(Weight(float((weight_layers[0])[i])))
-            self.i_h_weights2.append(Weight(float((weight_layers[1])[i])))
-            self.i_h_weights3.append(Weight(float((weight_layers[2])[i])))
-        
-        # add hidden to output layer weights
-        for i in range(0,2):
-            self.h_o_weights1.append(Weight(float((weight_layers[2])[i])))
-            self.h_o_weights2.append(Weight(float((weight_layers[3])[i])))
-            self.h_o_weights3.append(Weight(float((weight_layers[4])[i])))
+    # retrives the weights stored in "initial_weights.txt"
+    def __retrieve_initial_weights(self, weights_file):
+        weights_data = parse_file(weights_file)
 
-if __name__ == "__main__":
-    ann = ANN(TestSet())
-    i = 0
-    for x in range(0, 1000):
-        for layer in range(0, 10):
-            #print("iteration: {}".format(i))
-            ann.change_input_layer(layer)
-            ann.manage_target()
-            ann.forward_propagation()
-            ann.backward_propagation()
-            print(ann.get_prediction());
-            i+=1
-        print()
+        if debug:
+            print("weights: ", weights_data)
 
-    ann.save_weights()
+        input_to_hidden1_weights = []
+        input_to_hidden2_weights = []
+        
+        total_weights = []
+        for w in range(0, 4):
+            total_weights.append(weights_data[w].split())
+
+        if debug:
+            print("weights:", total_weights)
+
+        for w in range(0, 4):
+            input_to_hidden1_weights.append(Weight(float((total_weights[w])[0])))
+            input_to_hidden2_weights.append(Weight(float((total_weights[w])[1])))
+
+        if debug:
+            print("input to hidden neuron 1 weights:")
+            for w in range(0, 4):
+                print(input_to_hidden1_weights[w].val)
+            print()
+            print("input to hidden neuron 2 weights:")
+            for w in range(0, 4):
+                print(input_to_hidden2_weights[w].val)
+
+
+
+    def print_input_layer(self):
+        for input_layer in self.input_layers:
+            for input_neuron in input_layer:
+                print(input_neuron.val, end="", flush=True)
+            print()
+
+
+ann = ANN()
+ann.generate_test_set()
+
+ann.print_input_layer()
+
+
