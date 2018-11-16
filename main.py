@@ -11,13 +11,8 @@ def parse_file(to_parse_file):
     return [line.rstrip('\n') for line in open(to_parse_file)]
 
 
-# credit to arronasterling on SO for this blank line skipper
-def nonblank_lines(_file):
-    for l in _file:
-        line = l.rstrip()
-        if line:
-            yield line
-
+# Parse and store the input layer inputs into a list
+# @return:  a list of input layers
 def retrieve_inputs(inputs_file):
     parsed_file = parse_file(inputs_file)
 
@@ -31,27 +26,29 @@ def retrieve_inputs(inputs_file):
     return input_layers
 
 
+# Map the input values to the dict keys
 def load_inputs_from(input_layer):
     input_neuron['A'] = input_layer[0]
     input_neuron['B'] = input_layer[1]
     input_neuron['C'] = input_layer[2]
     input_neuron['D'] = input_layer[3]
 
+
+# Write the new weights to a file
 def write_new_weights_to(new_weights_file, old_weights):
     write_weights_to = open(new_weights_file, 'w')
     
     for key, value in old_weights.items():
         write_weights_to.write("{}\n".format(value))
 
+
+# Map the weights taken from a file and store them in the dict 
 def load_weights_from(new_weights_file):
     parsed_file = parse_file(new_weights_file)
     line = 0
     for key, value in weight.items():
         weight[key] = float(parsed_file[line])
         line+=1
-
-
-
 
 input_neuron = {
     'A': 0,
@@ -105,6 +102,7 @@ output_neuron = {
 }
 
 
+# Allows the neuron network to produce a prediction 
 def forward_propagation():
     # calculate the hidden layer neurons:
     hidden_neuron['E'] = calc_E_output()
@@ -113,7 +111,7 @@ def forward_propagation():
     if debug:
         print('Hidden neuron E: {}, F {}'.format(hidden_neuron['E'], hidden_neuron['F']))
     
-    # calculate the output lyaer neurons:
+    # calculate the output layer neurons:
     output_neuron['G'] = calc_G_output()
     output_neuron['H'] = calc_H_output()
 
@@ -139,12 +137,15 @@ def calc_H_output():
 def sigmoid(s):
     return 1.0/(1.0 + math.exp(-s))
 
+
+# The training portion of the neural network
+# The weights are changed based on the feedback from the output neurons
 def backward_propagation():
     # copy the current weights to old_weight dict
     for key, value in weight.items():
         old_weight[key] = value
     
-    
+    # check to see how many "1s"(bright pixels) are in the input layer
     pixels_sum = 0
     for key, value in input_neuron.items():
         pixels_sum += value
@@ -169,13 +170,11 @@ def backward_propagation():
         print('Error term E: {}, F: {}'.format(E_error_term, F_error_term))
 
     # change the weights between the input and hidden layers
-
     weight['A to E'] = old_weight['A to E'] + (learning_rate * E_error_term * input_neuron['A']) 
     weight['B to E'] = old_weight['B to E'] + (learning_rate * E_error_term * input_neuron['B'])
     weight['C to E'] = old_weight['C to E'] + (learning_rate * E_error_term * input_neuron['C'])
     weight['D to E'] = old_weight['D to E'] + (learning_rate * E_error_term * input_neuron['D'])
 
-    
     weight['A to F'] = old_weight['A to F'] + (learning_rate * F_error_term * input_neuron['A'])
     weight['B to F'] = old_weight['B to F'] + (learning_rate * F_error_term * input_neuron['B'])
     weight['C to F'] = old_weight['C to F'] + (learning_rate * F_error_term * input_neuron['C'])
@@ -186,7 +185,6 @@ def backward_propagation():
         print("New weights A to F: {}, B to F: {}, C to F: {}, D to F: {}".format(weight['A to F'], weight['B to F'], weight['C to F'], weight['D to F']))
 
     # change the weights between the hidden and output layers
-
     weight['E to G'] = old_weight['E to G'] + (learning_rate * G_error_term * hidden_neuron['E'])
     weight['F to G'] = old_weight['F to G'] + (learning_rate * G_error_term * hidden_neuron['F'])
     weight['E to H'] = old_weight['E to H'] + (learning_rate * H_error_term * hidden_neuron['E'])
@@ -195,15 +193,17 @@ def backward_propagation():
 
 
 
+# The actual testing and training starts below
 inputs = retrieve_inputs("inputs_data.txt")
 
-def print_answer():
+def print_prediction():
     if output_neuron['G'] > output_neuron['H']:
         print("bright")
     else:
         print("dark")
 
 def train():
+    # comment this part out once you have new weights to train off of
     for i in range(0, 1):
         for index in range(0, 16):
             load_inputs_from(inputs[index])
@@ -213,20 +213,19 @@ def train():
             backward_propagation()
             write_new_weights_to("new_weights.txt", weight)
     
-    
     for i in range(0, 1000):
         for index in range(0, 16):
             load_inputs_from(inputs[index])
             load_weights_from("new_weights.txt")
             forward_propagation()
             print(output_neuron, end = " ")
-            print_answer()
+            print_prediction()
             backward_propagation()
             write_new_weights_to("new_weights.txt", weight)
         print()
 
 
-# test to see if the neural network can answer correctly
+# Test to see if the neural network can answer correctly
 def test(t):
     load_inputs_from(inputs[t])
     load_weights_from("trained_weights.txt")
@@ -235,9 +234,9 @@ def test(t):
     print("Input: ", end = " ")
     print(inputs[t], end = " ")
     print("Prediction: ", end = " ")
-    print_answer()
+    print_prediction()
 
-# user input testing
+# User input testing
 while(True):
     t = input("Enter the index of the inputs: ")
     if t == "q":
